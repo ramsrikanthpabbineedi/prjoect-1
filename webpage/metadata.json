@@ -1,0 +1,5 @@
+{
+  "name": "IronPulse Gym Planner",
+  "description": "A high-performance workout management system featuring Google OAuth, OTP login, custom workout planning, and smart reminders.",
+  "requestFramePermissions": []
+}

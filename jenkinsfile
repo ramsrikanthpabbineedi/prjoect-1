@@ -1,0 +1,113 @@
+pipeline {
+    agent any
+
+    environment {
+        AWS_REGION = 'eu-north-1'
+        ANSIBLE_DIR = 'ansible'
+    }
+
+    stages {
+
+        stage('Checkout Code') {
+            steps {
+                echo "📦 Checking out source code..."
+                git branch: 'main',
+                    url: 'https://github.com/ramsrikanthpabbineedi/workout_app_source_code.git'
+            }
+        }
+
+        stage('Terraform Init') {
+            steps {
+                echo "🚀 Terraform Init"
+                withAWS(credentials: 'aws_id', region: "${AWS_REGION}") {
+                    sh 'terraform init -input=false'
+                }
+            }
+        }
+
+        stage('Terraform Validate') {
+            steps {
+                echo "✅ Terraform Validate"
+                sh 'terraform validate'
+            }
+        }
+
+        stage('Terraform Plan') {
+            steps {
+                echo "📄 Terraform Plan"
+                withAWS(credentials: 'aws_id', region: "${AWS_REGION}") {
+                    sh 'terraform plan -out=tfplan'
+                }
+            }
+        }
+
+        stage('Terraform Apply') {
+            steps {
+                echo "🚀 Terraform Apply"
+                withAWS(credentials: 'aws_id', region: "${AWS_REGION}") {
+                    sh 'terraform apply -auto-approve tfplan'
+                }
+            }
+        }
+
+        stage('Generate Ansible Inventory') {
+            steps {
+                echo "📝 Creating dynamic Ansible inventory..."
+                script {
+                    def publicIp = sh(
+                        script: 'terraform output -raw public_ip',
+                        returnStdout: true
+                    ).trim()
+
+                    sh """
+                    mkdir -p ${ANSIBLE_DIR}
+                    echo "[web]" > ${ANSIBLE_DIR}/inventory
+                    echo "${publicIp} ansible_user=ec2-user" >> ${ANSIBLE_DIR}/inventory
+                    """
+                }
+            }
+        }
+
+        stage('Ansible Ping Test') {
+            steps {
+                sshagent(credentials: ['ec2-ssh-key']) {
+                    sh '''
+                    ansible -i ansible/inventory web -m ping
+                    '''
+                }
+            }
+        }
+
+        stage('Run Ansible Playbook') {
+            steps {
+                echo "⚙️ Running Ansible Playbook..."
+                sshagent(credentials: ['ec2-ssh-key']) {
+                    sh '''
+                    ansible-playbook -i ansible/inventory ansible/playbook.yml
+                    '''
+                }
+            }
+        }
+
+        stage('Terraform Destroy (Manual Approval)') {
+            when {
+                expression { false }
+            }
+            steps {
+                input message: '⚠️ Do you really want to destroy infrastructure?'
+                withAWS(credentials: 'aws_id', region: "${AWS_REGION}") {
+                    sh 'terraform destroy -auto-approve'
+                }
+            }
+        }
+    }
+
+    post {
+        success {
+            echo "✅ Pipeline executed successfully!"
+        }
+        failure {
+            echo "❌ Pipeline failed. Check logs."
+        }
+    }
+}

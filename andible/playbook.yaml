@@ -1,0 +1,21 @@
+- hosts: web
+  become: yes
+  tasks:
+    - name: Install Apache
+      yum:
+        name: httpd
+        state: present
+
+    - name: Start Apache
+      service:
+        name: httpd
+        state: started
+        enabled: yes
+
+    - name: Deploy Website files
+      copy:
+        src: webpage/
+        dest: /var/www/html/
+        owner: apache
+        group: apache
+        mode: '0755'
