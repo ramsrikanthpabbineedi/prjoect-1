@@ -78,7 +78,7 @@ resource "aws_security_group" "security-1" {
 }
 resource "aws_vpc_endpoint" "ec2" {
   vpc_id             = aws_vpc.vps-1.id
-  vpc_endpoint_type  = "interface"
+  vpc_endpoint_type  = "Interface"
   service_name       = "com.amazonaws.eu-north-1.ec2messages"
   subnet_ids         = [aws_subnet.subnet-1.id]
   security_group_ids = [aws_security_group.security-1.id]
@@ -89,7 +89,7 @@ resource "aws_vpc_endpoint" "ec2" {
 
 resource "aws_vpc_endpoint" "ssmmessager" {
   vpc_id             = aws_vpc.vps-1.id
-  vpc_endpoint_type  = "interface"
+  vpc_endpoint_type  = "Interface"
   service_name       = "com.amazonaws.eu-north-1.ssmmessages"
   subnet_ids         = [aws_subnet.subnet-1.id]
   security_group_ids = [aws_security_group.security-1.id]
@@ -99,7 +99,7 @@ resource "aws_vpc_endpoint" "ssmmessager" {
 }
 resource "aws_vpc_endpoint" "ssm" {
   vpc_id             = aws_vpc.vps-1.id
-  vpc_endpoint_type  = "interface"
+  vpc_endpoint_type  = "Interface"
   service_name       = "com.amazonaws.eu-north-1.ssm"
   subnet_ids         = [aws_subnet.subnet-1.id]
   security_group_ids = [aws_security_group.security-1.id]
